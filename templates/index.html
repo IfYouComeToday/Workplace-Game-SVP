@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Workplace Game SVP - Modern UI</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Header Section -->
+  <header class="bg-white shadow-sm p-6 mb-4">
+    <h1 class="text-2xl font-bold">Workplace Game SVP - Modern UI</h1>
+    <p class="text-gray-600 mt-1">
+      Base variables are adjustable. Intermediate &amp; Final variables are computed automatically.
+    </p>
+  </header>
+
+  <div class="max-w-screen-xl mx-auto px-4">
+    <!-- The 3-column layout -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Base Column -->
+      <div>
+        <h2 class="text-xl font-semibold mb-2">Base Variables</h2>
+        <div id="base-col" class="space-y-4"></div>
+      </div>
+
+      <!-- Intermediate Column -->
+      <div>
+        <h2 class="text-xl font-semibold mb-2">Intermediate Variables</h2>
+        <div id="intermediate-col" class="space-y-4"></div>
+      </div>
+
+      <!-- Final Column -->
+      <div>
+        <h2 class="text-xl font-semibold mb-2">Final Variables</h2>
+        <div id="final-col" class="space-y-4"></div>
+      </div>
+    </div>
+
+    <!-- Reset Button -->
+    <div class="mt-6">
+      <button
+        onclick="resetState()"
+        class="px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors"
+      >
+        Reset State
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Arrays of variables for each category
+    const baseVars = [
+      "leadership_effectiveness",
+      "communication",
+      "work_life_balance",
+      "resource_allocation",
+      "change_readiness",
+      "diversity_inclusion"
+    ];
+
+    const intermediateVars = [
+      "trust",
+      "conflict_resolution",
+      "stress_levels",
+      "employee_satisfaction",
+      "morale",
+      "engagement",
+      "collaboration",
+      "resilience",
+      "adaptability",
+      "organizational_learning",
+      "innovation"
+    ];
+
+    const finalVars = [
+      "productivity",
+      "employee_turnover",
+      "absenteeism",
+      "customer_satisfaction"
+    ];
+
+    let currentState = {};
+
+    // Build UI
+    function buildUI() {
+      const baseCol = document.getElementById("base-col");
+      baseVars.forEach(v => {
+        baseCol.appendChild(createVariableCard(v, true));
+      });
+
+      const intermediateCol = document.getElementById("intermediate-col");
+      intermediateVars.forEach(v => {
+        intermediateCol.appendChild(createVariableCard(v, false));
+      });
+
+      const finalCol = document.getElementById("final-col");
+      finalVars.forEach(v => {
+        finalCol.appendChild(createVariableCard(v, false));
+      });
+    }
+
+    // Create a "card" for each variable with Tailwind classes
+    function createVariableCard(variableName, enabled) {
+      const card = document.createElement("div");
+      // Card styling
+      card.className = "bg-white rounded shadow p-4 flex flex-col space-y-2";
+
+      // Title
+      const title = document.createElement("h3");
+      title.className = "font-semibold text-gray-700 capitalize";
+      title.textContent = variableName.replace(/_/g, " ");
+      card.appendChild(title);
+
+      // Slider
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = 0;
+      slider.max = 100;
+      slider.value = 50;
+      slider.id = variableName;
+      // Tailwind slider styling
+      slider.className = "w-full accent-blue-600";
+      slider.disabled = !enabled;
+
+      // On input
+      if (enabled) {
+        slider.oninput = function() {
+          updateVariable(variableName, this.value);
+        };
+      }
+      card.appendChild(slider);
+
+      // Value display
+      const valueDisplay = document.createElement("div");
+      valueDisplay.id = variableName + "-value";
+      valueDisplay.className = "text-sm text-gray-600 font-mono";
+      valueDisplay.textContent = "50";
+      card.appendChild(valueDisplay);
+
+      return card;
+    }
+
+    // Fetch the current simulation state
+    function fetchState() {
+      fetch("/state")
+        .then(res => res.json())
+        .then(data => {
+          currentState = data;
+          updateUI(data);
+        });
+    }
+
+    // Update a single base variable
+    function updateVariable(variable, value) {
+      const display = document.getElementById(variable + "-value");
+      if (display) display.textContent = parseFloat(value).toFixed(2);
+
+      fetch("/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variable: variable, value: parseFloat(value) })
+      })
+      .then(res => res.json())
+      .then(data => {
+        currentState = data;
+        updateUI(data);
+      });
+    }
+
+    // Update all sliders and displays in the UI
+    function updateUI(state) {
+      for (let key in state) {
+        const slider = document.getElementById(key);
+        const display = document.getElementById(key + "-value");
+        if (slider) {
+          slider.value = state[key];
+        }
+        if (display) {
+          display.textContent = parseFloat(state[key]).toFixed(2);
+        }
+      }
+    }
+
+    // Reset state to defaults (50)
+    function resetState() {
+      fetch("/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variable: "reset", value: 0 })
+      })
+      .then(res => res.json())
+      .then(data => {
+        currentState = data;
+        updateUI(data);
+      });
+    }
+
+    // Build the UI on page load
+    window.onload = function() {
+      buildUI();
+      fetchState();
+    };
+  </script>
+</body>
+</html>
