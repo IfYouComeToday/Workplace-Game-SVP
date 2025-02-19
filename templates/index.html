@@ -2,16 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Workplace Game SVP - Modern UI (Deep Analytics)</title>
+  <title>Workplace Game SVP - Modern UI (Interactive Hover Effects)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Lato for body, Montserrat for headings -->
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
   <!-- Popper.js and Tippy.js for tooltips -->
   <script src="https://unpkg.com/@popperjs/core@2"></script>
   <script src="https://unpkg.com/tippy.js@6"></script>
   <!-- Chart.js for dynamic charts and radar chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Transition style for the highlight effect */
+    /* Global typography and layout */
+    body {
+      font-family: 'Lato', sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    header {
+      padding: 2rem;
+      background: linear-gradient(135deg, #4f46e5, #3b82f6);
+      color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+      animation: fadeIn 1s ease-out;
+    }
+    .container {
+      padding: 2rem;
+    }
+    .card {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    }
+    button {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #15803d, #16a34a);
+      transform: scale(1.02);
+    }
+    /* Accent button for scenarios */
+    .btn-blue {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+    .btn-blue:hover {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+    /* Slider interactive hover effect */
+    input[type="range"]:hover {
+      filter: brightness(1.1);
+      transition: filter 0.2s ease;
+    }
+    /* Transition for value highlights */
     .highlight-green {
       background-color: #d1fae5;
       transition: background-color 1s ease;
@@ -20,14 +84,42 @@
       background-color: #fee2e2;
       transition: background-color 1s ease;
     }
+    /* Animation for narrative text */
+    @keyframes fadeInSlide {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .narrative-animate {
+      animation: fadeInSlide 0.8s ease-out;
+    }
+    /* Animation for alerts */
+    @keyframes alertFade {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .alert-animate {
+      animation: alertFade 0.5s ease-out;
+    }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body>
   <!-- Header Section -->
-  <header class="bg-white shadow-sm p-6 mb-4">
-    <h1 class="text-2xl font-bold">Workplace Game SVP - Modern UI (Deep Analytics)</h1>
-    <p class="text-gray-600 mt-1">
-      Adjust the base variables and see a health snapshot and radar chart of your workplace.
+  <header class="max-w-screen-xl mx-auto px-4">
+    <h1 class="text-3xl">Workplace Game SVP</h1>
+    <p class="mt-2">
+      Adjust the base variables and enjoy enhanced interactive hover effects across your UI.
     </p>
   </header>
 
@@ -44,63 +136,55 @@
   <div id="summary" class="max-w-screen-xl mx-auto px-4 mb-4 p-4 bg-gray-100 rounded text-gray-800"></div>
 
   <div class="max-w-screen-xl mx-auto px-4">
-    <!-- The 3-column layout -->
+    <!-- 3-Column Layout -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Base Column -->
+      <!-- Base Variables Column -->
       <div>
-        <h2 class="text-xl font-semibold mb-2">Base Variables</h2>
+        <h2 class="text-xl mb-2">Base Variables</h2>
         <div id="base-col" class="space-y-4"></div>
       </div>
-
-      <!-- Intermediate Column -->
+      <!-- Intermediate Variables Column -->
       <div>
-        <h2 class="text-xl font-semibold mb-2">Intermediate Variables</h2>
+        <h2 class="text-xl mb-2">Intermediate Variables</h2>
         <div id="intermediate-col" class="space-y-4"></div>
       </div>
-
-      <!-- Final Column -->
+      <!-- Final Variables Column -->
       <div>
-        <h2 class="text-xl font-semibold mb-2">Final Variables</h2>
+        <h2 class="text-xl mb-2">Final Variables</h2>
         <div id="final-col" class="space-y-4"></div>
       </div>
     </div>
 
     <!-- Reset Button -->
     <div class="mt-6">
-      <button
-        onclick="resetState().then(() => fetchState())"
-        class="px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors"
-      >
+      <button onclick="resetState().then(() => fetchState())">
         Reset State
       </button>
     </div>
 
-    <!-- Chart Section for Productivity Trend -->
+    <!-- Productivity Trend Chart Section -->
     <div class="mt-10">
-      <h2 class="text-xl font-semibold mb-2">Productivity Trend</h2>
+      <h2 class="text-xl mb-2">Productivity Trend</h2>
       <canvas id="productivityChart" class="bg-white rounded shadow p-4"></canvas>
     </div>
 
     <!-- Radar Chart Section -->
     <div class="mt-10">
-      <h2 class="text-xl font-semibold mb-2">Workplace Radar</h2>
+      <h2 class="text-xl mb-2">Workplace Radar</h2>
       <canvas id="radarChart" class="bg-white rounded shadow p-4"></canvas>
     </div>
 
     <!-- Pre-Loaded Scenarios Section -->
     <div class="mt-10">
-      <h2 class="text-xl font-semibold mb-2">Pre-Loaded Scenarios</h2>
+      <h2 class="text-xl mb-2">Pre-Loaded Scenarios</h2>
       <div class="space-x-4">
-        <button onclick="applyScenario('High Communication, Low Leadership')"
-          class="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-700 transition-colors">
+        <button onclick="applyScenario('High Communication, Low Leadership')" class="btn-blue">
           High Communication, Low Leadership
         </button>
-        <button onclick="applyScenario('Strong Leadership, Weak Resource Allocation')"
-          class="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-700 transition-colors">
+        <button onclick="applyScenario('Strong Leadership, Weak Resource Allocation')" class="btn-blue">
           Strong Leadership, Weak Resource Allocation
         </button>
-        <button onclick="applyScenario('Balanced')"
-          class="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-700 transition-colors">
+        <button onclick="applyScenario('Balanced')" class="btn-blue">
           Balanced
         </button>
       </div>
@@ -108,10 +192,9 @@
 
     <!-- Save/Load States Section -->
     <div class="mt-10">
-      <h2 class="text-xl font-semibold mb-2">Saved States</h2>
+      <h2 class="text-xl mb-2">Saved States</h2>
       <div class="space-x-4 mb-4">
-        <button onclick="saveCurrentState()"
-          class="px-4 py-2 bg-purple-600 text-white font-semibold rounded hover:bg-purple-700 transition-colors">
+        <button onclick="saveCurrentState()">
           Save Current State
         </button>
       </div>
@@ -120,7 +203,7 @@
   </div>
 
   <script>
-    // Dictionary of short explanations for each variable
+    // Dictionary of variable descriptions for tooltips
     const variableDescriptions = {
       "leadership_effectiveness": "Measures how effectively leaders guide and support the team.",
       "communication": "Captures clarity and openness in team interactions.",
@@ -128,7 +211,6 @@
       "resource_allocation": "Reflects the availability and distribution of necessary resources.",
       "change_readiness": "Shows how prepared the organization is for shifts in strategy or structure.",
       "diversity_inclusion": "Measures how diverse and inclusive the workplace culture is.",
-
       "trust": "Derived from communication (60%) and leadership effectiveness (40%).",
       "conflict_resolution": "Effectiveness in resolving disputes, driven by leadership & trust.",
       "stress_levels": "Reflects workplace stress, influenced by work–life balance & conflict resolution.",
@@ -140,43 +222,16 @@
       "adaptability": "Flexibility in responding to change, depends on readiness & resilience.",
       "organizational_learning": "Capacity for continuous improvement, driven by innovation & adaptability.",
       "innovation": "Workplace creativity, influenced by organizational learning & adaptability.",
-
       "productivity": "Work output/efficiency, driven by morale, engagement, and resource allocation.",
       "employee_turnover": "Rate at which employees leave, inversely related to satisfaction.",
       "absenteeism": "Missing work, inversely related to engagement.",
       "customer_satisfaction": "Customer happiness, based on productivity, innovation, and satisfaction."
     };
 
-    // Arrays of variables for each category
-    const baseVars = [
-      "leadership_effectiveness",
-      "communication",
-      "work_life_balance",
-      "resource_allocation",
-      "change_readiness",
-      "diversity_inclusion"
-    ];
-
-    const intermediateVars = [
-      "trust",
-      "conflict_resolution",
-      "stress_levels",
-      "employee_satisfaction",
-      "morale",
-      "engagement",
-      "collaboration",
-      "resilience",
-      "adaptability",
-      "organizational_learning",
-      "innovation"
-    ];
-
-    const finalVars = [
-      "productivity",
-      "employee_turnover",
-      "absenteeism",
-      "customer_satisfaction"
-    ];
+    // Arrays for variable categories
+    const baseVars = ["leadership_effectiveness", "communication", "work_life_balance", "resource_allocation", "change_readiness", "diversity_inclusion"];
+    const intermediateVars = ["trust", "conflict_resolution", "stress_levels", "employee_satisfaction", "morale", "engagement", "collaboration", "resilience", "adaptability", "organizational_learning", "innovation"];
+    const finalVars = ["productivity", "employee_turnover", "absenteeism", "customer_satisfaction"];
 
     let currentState = {};
     let previousState = {};
@@ -213,38 +268,24 @@
       }
     };
 
-    // Build UI
+    // Build UI components
     function buildUI() {
       const baseCol = document.getElementById("base-col");
-      baseVars.forEach(v => {
-        baseCol.appendChild(createVariableCard(v, true));
-      });
-
+      baseVars.forEach(v => baseCol.appendChild(createVariableCard(v, true)));
       const intermediateCol = document.getElementById("intermediate-col");
-      intermediateVars.forEach(v => {
-        intermediateCol.appendChild(createVariableCard(v, false));
-      });
-
+      intermediateVars.forEach(v => intermediateCol.appendChild(createVariableCard(v, false)));
       const finalCol = document.getElementById("final-col");
-      finalVars.forEach(v => {
-        finalCol.appendChild(createVariableCard(v, false));
-      });
+      finalVars.forEach(v => finalCol.appendChild(createVariableCard(v, false)));
     }
 
-    // Create a "card" for each variable with Tailwind classes
+    // Create a card for a variable
     function createVariableCard(variableName, enabled) {
       const card = document.createElement("div");
-      card.className = "bg-white rounded shadow p-4 flex flex-col space-y-2";
-
-      // Title
+      card.className = "card";
       const title = document.createElement("h3");
-      title.className = "font-semibold text-gray-700 capitalize";
       title.textContent = variableName.replace(/_/g, " ");
-      // Attach a data attribute for tooltip
       title.setAttribute("data-variable", variableName);
       card.appendChild(title);
-
-      // Slider
       const slider = document.createElement("input");
       slider.type = "range";
       slider.min = 0;
@@ -259,18 +300,15 @@
         };
       }
       card.appendChild(slider);
-
-      // Value display
       const valueDisplay = document.createElement("div");
       valueDisplay.id = variableName + "-value";
       valueDisplay.className = "text-sm text-gray-600 font-mono";
       valueDisplay.textContent = "50";
       card.appendChild(valueDisplay);
-
       return card;
     }
 
-    // Fetch the current simulation state
+    // Fetch state from the server
     function fetchState() {
       fetch("/state")
         .then(res => res.json())
@@ -281,7 +319,7 @@
         });
     }
 
-    // Update a single base variable
+    // Update a single variable
     function updateVariable(variable, value) {
       const display = document.getElementById(variable + "-value");
       if (display) display.textContent = parseFloat(value).toFixed(2);
@@ -298,14 +336,12 @@
       });
     }
 
-    // Update all sliders/displays and refresh analytics (alerts, narrative, summary, achievements)
+    // Update the UI and analytics components
     function updateUI(state) {
       for (let key in state) {
         const slider = document.getElementById(key);
         const display = document.getElementById(key + "-value");
-        if (slider) {
-          slider.value = state[key];
-        }
+        if (slider) slider.value = state[key];
         if (display) {
           let oldVal = previousState[key] !== undefined ? previousState[key] : 50;
           let newVal = state[key];
@@ -328,7 +364,7 @@
       checkAchievements(state);
     }
 
-    // Check for threshold-based alerts and display them
+    // Check for threshold alerts
     function checkAlerts(state) {
       const alertsContainer = document.getElementById("alerts");
       let alerts = [];
@@ -342,18 +378,18 @@
         alerts.push("Alert: Employee Satisfaction is low. Boost leadership, work–life balance, and reduce stress.");
       }
       alertsContainer.innerHTML = alerts.length > 0 
-        ? alerts.map(alert => `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-2">${alert}</div>`).join("")
+        ? alerts.map(alert => `<div class="alert-animate bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-2">${alert}</div>`).join("")
         : "";
     }
 
-    // Update narrative text based on changes
+    // Update narrative text with animation
     function updateNarrative(current, previous) {
       const narrativeContainer = document.getElementById("narrative");
       let narratives = [];
       if (current.communication > previous.communication) {
-        narratives.push(`After increasing Communication by ${ (current.communication - previous.communication).toFixed(0) } points, employees feel more informed.`);
+        narratives.push(`After increasing Communication by ${(current.communication - previous.communication).toFixed(0)} points, employees feel more informed.`);
       } else if (current.communication < previous.communication) {
-        narratives.push(`A drop in Communication by ${ (previous.communication - current.communication).toFixed(0) } points leaves some employees feeling out of the loop.`);
+        narratives.push(`A drop in Communication by ${(previous.communication - current.communication).toFixed(0)} points leaves some employees feeling out of the loop.`);
       }
       if (current.leadership_effectiveness > previous.leadership_effectiveness) {
         narratives.push(`Boosting Leadership Effectiveness inspires confidence across the team.`);
@@ -361,28 +397,28 @@
         narratives.push(`A reduction in Leadership Effectiveness may create uncertainty among team members.`);
       }
       if (current.stress_levels < previous.stress_levels) {
-        narratives.push(`With Stress Levels dropping by ${ (previous.stress_levels - current.stress_levels).toFixed(0) } points, the work environment feels more relaxed.`);
+        narratives.push(`With Stress Levels dropping by ${(previous.stress_levels - current.stress_levels).toFixed(0)} points, the work environment feels more relaxed.`);
       }
       if (current.productivity > previous.productivity) {
-        narratives.push(`Higher Productivity, increased by ${ (current.productivity - previous.productivity).toFixed(0) } points, indicates that the team is achieving more.`);
+        narratives.push(`Higher Productivity, increased by ${(current.productivity - previous.productivity).toFixed(0)} points, indicates that the team is achieving more.`);
       }
       narrativeContainer.innerHTML = narratives.join(" ");
+      narrativeContainer.classList.add("narrative-animate");
+      setTimeout(() => narrativeContainer.classList.remove("narrative-animate"), 800);
     }
 
-    // Update snapshot summary based on current state
+    // Update snapshot summary
     function updateSummary(state) {
       const summaryContainer = document.getElementById("summary");
       let summaryText = `Overall, your workplace has a morale of ${state.morale.toFixed(0)} and productivity of ${state.productivity.toFixed(0)}. `;
       summaryText += `Trust is at ${state.trust.toFixed(0)}. `;
-      if (state.trust < 40) {
-        summaryText += `Consider boosting Communication and Leadership Effectiveness to improve trust.`;
-      } else {
-        summaryText += `Keep up the good work!`;
-      }
+      summaryText += state.trust < 40 
+        ? `Consider boosting Communication and Leadership Effectiveness to improve trust.` 
+        : `Keep up the good work!`;
       summaryContainer.innerHTML = summaryText;
     }
 
-    // Check for and award achievements
+    // Check and award achievements
     function checkAchievements(state) {
       const achievementsContainer = document.getElementById("achievements");
       achievementsContainer.innerHTML = "";
@@ -400,7 +436,7 @@
       });
     }
 
-    // Reset state to defaults (50) and return a promise
+    // Reset state
     function resetState() {
       return fetch("/update", {
         method: "POST",
@@ -416,7 +452,7 @@
       });
     }
 
-    // Initialize the Chart.js line chart for Productivity Trend
+    // Initialize Productivity Chart
     function initializeChart() {
       const ctx = document.getElementById("productivityChart").getContext("2d");
       productivityChart = new Chart(ctx, {
@@ -441,7 +477,7 @@
       });
     }
 
-    // Update the productivity chart with new data
+    // Update Productivity Chart
     let updateCount = 0;
     function updateProductivityChart(productivityValue) {
       updateCount++;
@@ -452,7 +488,7 @@
       }
     }
 
-    // Initialize the Radar Chart for key workplace dimensions
+    // Initialize Radar Chart
     function initializeRadarChart() {
       const ctx = document.getElementById("radarChart").getContext("2d");
       radarChart = new Chart(ctx, {
@@ -469,19 +505,15 @@
         },
         options: {
           scales: {
-            r: {
-              beginAtZero: true,
-              max: 100
-            }
+            r: { beginAtZero: true, max: 100 }
           }
         }
       });
     }
 
-    // Update the radar chart with current state values for key dimensions
+    // Update Radar Chart
     function updateRadarChart(state) {
       if (radarChart) {
-        // Using key intermediate and final variables for a snapshot view
         radarChart.data.datasets[0].data = [
           state.trust,
           state.morale,
@@ -494,7 +526,7 @@
       }
     }
 
-    // Apply a preset scenario by resetting and then updating base variables
+    // Apply preset scenario
     function applyScenario(scenarioName) {
       const preset = scenarios[scenarioName];
       if (!preset) return;
@@ -507,7 +539,7 @@
       });
     }
 
-    // Save the current state (only base variables) along with a timestamp
+    // Save current state
     function saveCurrentState() {
       const timestamp = new Date().toLocaleTimeString();
       const stateToSave = {};
@@ -518,7 +550,7 @@
       renderSavedStates();
     }
 
-    // Render the list of saved states
+    // Render saved states
     function renderSavedStates() {
       const container = document.getElementById("savedStatesList");
       container.innerHTML = "";
@@ -537,7 +569,7 @@
       });
     }
 
-    // Load a saved state by updating the base variables
+    // Load a saved state
     function loadState(savedState) {
       for (const key in savedState) {
         setTimeout(() => {
