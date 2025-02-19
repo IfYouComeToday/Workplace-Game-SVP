@@ -2,19 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Workplace Game SVP - Modern UI</title>
+  <title>Workplace Game SVP - Modern UI (Deep Analytics)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Popper.js and Tippy.js for tooltips -->
+  <script src="https://unpkg.com/@popperjs/core@2"></script>
+  <script src="https://unpkg.com/tippy.js@6"></script>
+  <!-- Chart.js for dynamic charts and radar chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Transition style for the highlight effect */
+    .highlight-green {
+      background-color: #d1fae5;
+      transition: background-color 1s ease;
+    }
+    .highlight-red {
+      background-color: #fee2e2;
+      transition: background-color 1s ease;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
-
   <!-- Header Section -->
   <header class="bg-white shadow-sm p-6 mb-4">
-    <h1 class="text-2xl font-bold">Workplace Game SVP - Modern UI</h1>
+    <h1 class="text-2xl font-bold">Workplace Game SVP - Modern UI (Deep Analytics)</h1>
     <p class="text-gray-600 mt-1">
-      Base variables are adjustable. Intermediate &amp; Final variables are computed automatically.
+      Adjust the base variables and see a health snapshot and radar chart of your workplace.
     </p>
   </header>
+
+  <!-- Alerts Section -->
+  <div id="alerts" class="max-w-screen-xl mx-auto px-4 mb-4"></div>
+
+  <!-- Narrative Section -->
+  <div id="narrative" class="max-w-screen-xl mx-auto px-4 mb-4 text-lg font-medium text-indigo-700"></div>
+
+  <!-- Achievements Section -->
+  <div id="achievements" class="max-w-screen-xl mx-auto px-4 mb-4 flex space-x-4"></div>
+
+  <!-- Snapshot Summary Section -->
+  <div id="summary" class="max-w-screen-xl mx-auto px-4 mb-4 p-4 bg-gray-100 rounded text-gray-800"></div>
 
   <div class="max-w-screen-xl mx-auto px-4">
     <!-- The 3-column layout -->
@@ -41,15 +68,85 @@
     <!-- Reset Button -->
     <div class="mt-6">
       <button
-        onclick="resetState()"
+        onclick="resetState().then(() => fetchState())"
         class="px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors"
       >
         Reset State
       </button>
     </div>
+
+    <!-- Chart Section for Productivity Trend -->
+    <div class="mt-10">
+      <h2 class="text-xl font-semibold mb-2">Productivity Trend</h2>
+      <canvas id="productivityChart" class="bg-white rounded shadow p-4"></canvas>
+    </div>
+
+    <!-- Radar Chart Section -->
+    <div class="mt-10">
+      <h2 class="text-xl font-semibold mb-2">Workplace Radar</h2>
+      <canvas id="radarChart" class="bg-white rounded shadow p-4"></canvas>
+    </div>
+
+    <!-- Pre-Loaded Scenarios Section -->
+    <div class="mt-10">
+      <h2 class="text-xl font-semibold mb-2">Pre-Loaded Scenarios</h2>
+      <div class="space-x-4">
+        <button onclick="applyScenario('High Communication, Low Leadership')"
+          class="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-700 transition-colors">
+          High Communication, Low Leadership
+        </button>
+        <button onclick="applyScenario('Strong Leadership, Weak Resource Allocation')"
+          class="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-700 transition-colors">
+          Strong Leadership, Weak Resource Allocation
+        </button>
+        <button onclick="applyScenario('Balanced')"
+          class="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-700 transition-colors">
+          Balanced
+        </button>
+      </div>
+    </div>
+
+    <!-- Save/Load States Section -->
+    <div class="mt-10">
+      <h2 class="text-xl font-semibold mb-2">Saved States</h2>
+      <div class="space-x-4 mb-4">
+        <button onclick="saveCurrentState()"
+          class="px-4 py-2 bg-purple-600 text-white font-semibold rounded hover:bg-purple-700 transition-colors">
+          Save Current State
+        </button>
+      </div>
+      <div id="savedStatesList" class="space-y-2"></div>
+    </div>
   </div>
 
   <script>
+    // Dictionary of short explanations for each variable
+    const variableDescriptions = {
+      "leadership_effectiveness": "Measures how effectively leaders guide and support the team.",
+      "communication": "Captures clarity and openness in team interactions.",
+      "work_life_balance": "Indicates how well personal and professional demands are balanced.",
+      "resource_allocation": "Reflects the availability and distribution of necessary resources.",
+      "change_readiness": "Shows how prepared the organization is for shifts in strategy or structure.",
+      "diversity_inclusion": "Measures how diverse and inclusive the workplace culture is.",
+
+      "trust": "Derived from communication (60%) and leadership effectiveness (40%).",
+      "conflict_resolution": "Effectiveness in resolving disputes, driven by leadership & trust.",
+      "stress_levels": "Reflects workplace stress, influenced by work–life balance & conflict resolution.",
+      "employee_satisfaction": "Overall happiness at work, affected by leadership, work–life balance, and stress.",
+      "morale": "Team spirit, impacted by trust, satisfaction, conflict resolution, and work–life balance.",
+      "engagement": "Level of employee involvement, driven by satisfaction and leadership.",
+      "collaboration": "How well teams cooperate, tied to communication, trust, and inclusion.",
+      "resilience": "Ability to bounce back from setbacks, depends on learning & satisfaction.",
+      "adaptability": "Flexibility in responding to change, depends on readiness & resilience.",
+      "organizational_learning": "Capacity for continuous improvement, driven by innovation & adaptability.",
+      "innovation": "Workplace creativity, influenced by organizational learning & adaptability.",
+
+      "productivity": "Work output/efficiency, driven by morale, engagement, and resource allocation.",
+      "employee_turnover": "Rate at which employees leave, inversely related to satisfaction.",
+      "absenteeism": "Missing work, inversely related to engagement.",
+      "customer_satisfaction": "Customer happiness, based on productivity, innovation, and satisfaction."
+    };
+
     // Arrays of variables for each category
     const baseVars = [
       "leadership_effectiveness",
@@ -82,6 +179,39 @@
     ];
 
     let currentState = {};
+    let previousState = {};
+    let productivityChart = null;
+    let radarChart = null;
+    let savedStates = [];
+    let earnedAchievements = new Set();
+
+    // Pre-loaded scenarios definition
+    const scenarios = {
+      "High Communication, Low Leadership": {
+        "communication": 80,
+        "leadership_effectiveness": 20,
+        "work_life_balance": 50,
+        "resource_allocation": 50,
+        "change_readiness": 50,
+        "diversity_inclusion": 50
+      },
+      "Strong Leadership, Weak Resource Allocation": {
+        "leadership_effectiveness": 80,
+        "resource_allocation": 20,
+        "communication": 50,
+        "work_life_balance": 50,
+        "change_readiness": 50,
+        "diversity_inclusion": 50
+      },
+      "Balanced": {
+        "leadership_effectiveness": 50,
+        "communication": 50,
+        "work_life_balance": 50,
+        "resource_allocation": 50,
+        "change_readiness": 50,
+        "diversity_inclusion": 50
+      }
+    };
 
     // Build UI
     function buildUI() {
@@ -104,13 +234,14 @@
     // Create a "card" for each variable with Tailwind classes
     function createVariableCard(variableName, enabled) {
       const card = document.createElement("div");
-      // Card styling
       card.className = "bg-white rounded shadow p-4 flex flex-col space-y-2";
 
       // Title
       const title = document.createElement("h3");
       title.className = "font-semibold text-gray-700 capitalize";
       title.textContent = variableName.replace(/_/g, " ");
+      // Attach a data attribute for tooltip
+      title.setAttribute("data-variable", variableName);
       card.appendChild(title);
 
       // Slider
@@ -120,11 +251,8 @@
       slider.max = 100;
       slider.value = 50;
       slider.id = variableName;
-      // Tailwind slider styling
       slider.className = "w-full accent-blue-600";
       slider.disabled = !enabled;
-
-      // On input
       if (enabled) {
         slider.oninput = function() {
           updateVariable(variableName, this.value);
@@ -147,6 +275,7 @@
       fetch("/state")
         .then(res => res.json())
         .then(data => {
+          previousState = { ...currentState };
           currentState = data;
           updateUI(data);
         });
@@ -156,7 +285,6 @@
     function updateVariable(variable, value) {
       const display = document.getElementById(variable + "-value");
       if (display) display.textContent = parseFloat(value).toFixed(2);
-
       fetch("/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -164,12 +292,13 @@
       })
       .then(res => res.json())
       .then(data => {
+        previousState = { ...currentState };
         currentState = data;
         updateUI(data);
       });
     }
 
-    // Update all sliders and displays in the UI
+    // Update all sliders/displays and refresh analytics (alerts, narrative, summary, achievements)
     function updateUI(state) {
       for (let key in state) {
         const slider = document.getElementById(key);
@@ -178,29 +307,266 @@
           slider.value = state[key];
         }
         if (display) {
-          display.textContent = parseFloat(state[key]).toFixed(2);
+          let oldVal = previousState[key] !== undefined ? previousState[key] : 50;
+          let newVal = state[key];
+          display.textContent = parseFloat(newVal).toFixed(2);
+          if (newVal > oldVal) {
+            display.classList.add("highlight-green");
+          } else if (newVal < oldVal) {
+            display.classList.add("highlight-red");
+          }
+          setTimeout(() => {
+            display.classList.remove("highlight-green", "highlight-red");
+          }, 1000);
         }
       }
+      updateProductivityChart(state.productivity);
+      updateRadarChart(state);
+      checkAlerts(state);
+      updateNarrative(state, previousState);
+      updateSummary(state);
+      checkAchievements(state);
     }
 
-    // Reset state to defaults (50)
+    // Check for threshold-based alerts and display them
+    function checkAlerts(state) {
+      const alertsContainer = document.getElementById("alerts");
+      let alerts = [];
+      if (state.stress_levels > 80) {
+        alerts.push("Warning: Stress levels are critically high. Consider improving Work–Life Balance or Conflict Resolution.");
+      }
+      if (state.trust < 30) {
+        alerts.push("Alert: Trust is very low. Consider increasing Communication or Leadership Effectiveness.");
+      }
+      if (state.employee_satisfaction < 30) {
+        alerts.push("Alert: Employee Satisfaction is low. Boost leadership, work–life balance, and reduce stress.");
+      }
+      alertsContainer.innerHTML = alerts.length > 0 
+        ? alerts.map(alert => `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-2">${alert}</div>`).join("")
+        : "";
+    }
+
+    // Update narrative text based on changes
+    function updateNarrative(current, previous) {
+      const narrativeContainer = document.getElementById("narrative");
+      let narratives = [];
+      if (current.communication > previous.communication) {
+        narratives.push(`After increasing Communication by ${ (current.communication - previous.communication).toFixed(0) } points, employees feel more informed.`);
+      } else if (current.communication < previous.communication) {
+        narratives.push(`A drop in Communication by ${ (previous.communication - current.communication).toFixed(0) } points leaves some employees feeling out of the loop.`);
+      }
+      if (current.leadership_effectiveness > previous.leadership_effectiveness) {
+        narratives.push(`Boosting Leadership Effectiveness inspires confidence across the team.`);
+      } else if (current.leadership_effectiveness < previous.leadership_effectiveness) {
+        narratives.push(`A reduction in Leadership Effectiveness may create uncertainty among team members.`);
+      }
+      if (current.stress_levels < previous.stress_levels) {
+        narratives.push(`With Stress Levels dropping by ${ (previous.stress_levels - current.stress_levels).toFixed(0) } points, the work environment feels more relaxed.`);
+      }
+      if (current.productivity > previous.productivity) {
+        narratives.push(`Higher Productivity, increased by ${ (current.productivity - previous.productivity).toFixed(0) } points, indicates that the team is achieving more.`);
+      }
+      narrativeContainer.innerHTML = narratives.join(" ");
+    }
+
+    // Update snapshot summary based on current state
+    function updateSummary(state) {
+      const summaryContainer = document.getElementById("summary");
+      let summaryText = `Overall, your workplace has a morale of ${state.morale.toFixed(0)} and productivity of ${state.productivity.toFixed(0)}. `;
+      summaryText += `Trust is at ${state.trust.toFixed(0)}. `;
+      if (state.trust < 40) {
+        summaryText += `Consider boosting Communication and Leadership Effectiveness to improve trust.`;
+      } else {
+        summaryText += `Keep up the good work!`;
+      }
+      summaryContainer.innerHTML = summaryText;
+    }
+
+    // Check for and award achievements
+    function checkAchievements(state) {
+      const achievementsContainer = document.getElementById("achievements");
+      achievementsContainer.innerHTML = "";
+      if (state.productivity > 90 && !earnedAchievements.has("Outstanding Culture")) {
+        earnedAchievements.add("Outstanding Culture");
+      }
+      if (state.stress_levels < 10 && !earnedAchievements.has("Zen Workplace")) {
+        earnedAchievements.add("Zen Workplace");
+      }
+      earnedAchievements.forEach(achievement => {
+        const badge = document.createElement("div");
+        badge.className = "bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full text-sm font-semibold";
+        badge.textContent = achievement;
+        achievementsContainer.appendChild(badge);
+      });
+    }
+
+    // Reset state to defaults (50) and return a promise
     function resetState() {
-      fetch("/update", {
+      return fetch("/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ variable: "reset", value: 0 })
       })
       .then(res => res.json())
       .then(data => {
+        previousState = { ...currentState };
         currentState = data;
         updateUI(data);
+        return data;
       });
     }
 
-    // Build the UI on page load
+    // Initialize the Chart.js line chart for Productivity Trend
+    function initializeChart() {
+      const ctx = document.getElementById("productivityChart").getContext("2d");
+      productivityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Productivity',
+            data: [],
+            borderColor: 'rgba(37, 99, 235, 1)',
+            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+            fill: true,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          scales: {
+            x: { title: { display: true, text: 'Updates' } },
+            y: { beginAtZero: true, max: 100, title: { display: true, text: 'Value' } }
+          }
+        }
+      });
+    }
+
+    // Update the productivity chart with new data
+    let updateCount = 0;
+    function updateProductivityChart(productivityValue) {
+      updateCount++;
+      if (productivityChart) {
+        productivityChart.data.labels.push(updateCount);
+        productivityChart.data.datasets[0].data.push(productivityValue);
+        productivityChart.update();
+      }
+    }
+
+    // Initialize the Radar Chart for key workplace dimensions
+    function initializeRadarChart() {
+      const ctx = document.getElementById("radarChart").getContext("2d");
+      radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['Trust', 'Morale', 'Employee Satisfaction', 'Engagement', 'Collaboration', 'Productivity'],
+          datasets: [{
+            label: 'Workplace Health',
+            data: [50, 50, 50, 50, 50, 50],
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+            pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+          }]
+        },
+        options: {
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+    }
+
+    // Update the radar chart with current state values for key dimensions
+    function updateRadarChart(state) {
+      if (radarChart) {
+        // Using key intermediate and final variables for a snapshot view
+        radarChart.data.datasets[0].data = [
+          state.trust,
+          state.morale,
+          state.employee_satisfaction,
+          state.engagement,
+          state.collaboration,
+          state.productivity
+        ];
+        radarChart.update();
+      }
+    }
+
+    // Apply a preset scenario by resetting and then updating base variables
+    function applyScenario(scenarioName) {
+      const preset = scenarios[scenarioName];
+      if (!preset) return;
+      resetState().then(() => {
+        for (const key in preset) {
+          setTimeout(() => {
+            updateVariable(key, preset[key]);
+          }, 100);
+        }
+      });
+    }
+
+    // Save the current state (only base variables) along with a timestamp
+    function saveCurrentState() {
+      const timestamp = new Date().toLocaleTimeString();
+      const stateToSave = {};
+      baseVars.forEach(v => {
+        stateToSave[v] = currentState[v];
+      });
+      savedStates.push({ time: timestamp, state: stateToSave });
+      renderSavedStates();
+    }
+
+    // Render the list of saved states
+    function renderSavedStates() {
+      const container = document.getElementById("savedStatesList");
+      container.innerHTML = "";
+      savedStates.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "flex items-center space-x-4 p-2 bg-gray-100 rounded";
+        const label = document.createElement("span");
+        label.textContent = `Saved at ${item.time}`;
+        const loadBtn = document.createElement("button");
+        loadBtn.textContent = "Load";
+        loadBtn.className = "px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors";
+        loadBtn.onclick = () => loadState(item.state);
+        div.appendChild(label);
+        div.appendChild(loadBtn);
+        container.appendChild(div);
+      });
+    }
+
+    // Load a saved state by updating the base variables
+    function loadState(savedState) {
+      for (const key in savedState) {
+        setTimeout(() => {
+          updateVariable(key, savedState[key]);
+        }, 100);
+      }
+    }
+
+    // On page load
     window.onload = function() {
       buildUI();
       fetchState();
+      initializeChart();
+      initializeRadarChart();
+      setTimeout(() => {
+        const titles = document.querySelectorAll("h3[data-variable]");
+        titles.forEach(title => {
+          const varName = title.getAttribute("data-variable");
+          const description = variableDescriptions[varName] || "No description available";
+          tippy(title, {
+            content: description,
+            theme: 'light-border',
+            placement: 'top',
+            animation: 'shift-away-subtle',
+            delay: [0, 100],
+            interactive: true
+          });
+        });
+      }, 500);
     };
   </script>
 </body>
